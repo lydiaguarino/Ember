@@ -17,59 +17,85 @@ App.AlbumRoute = Ember.Route.extend({
   model: function(params) {
     return App.ALBUM_FIXTURES.findProperty('id', params.album_id);
   },
-
   events: {
     play: function(song) {
-      this.controllerFor('nowPlaying').set('model', song);
+      this.controllerFor('nowPlaying').set('model',song);
     }
   }
 });
 
-App.NowPlayingController = Ember.ObjectController.extend();
+App.AudioPlayerComponent = Ember.Component.extend({
+  classNames: ['audio-control'],
+  duration:0,
+  currentTime:0,
+  isLoaded:false,
+  showCurrent:true,
+  remainingTime: function(){
+    var duration = this.get('duration');
+    var currentTime = this.get('currentTime');
+    return duration - currentTime;
+  }.property('duration','currentTime'),
+  didInsertElement: function(){
+    var $audio = this.$('audio'),
+    component = this;
+  $audio.on('loadedmetadata',function(){
+    component.set('duration',Math.floor(this.duration));
+    component.set('isLoaded',true);
+  });
 
-App.Song = Ember.Object.extend();
-App.Album = Ember.Object.extend({
-  totalDuration: function() {
-    var sum = 0;
+  $audio.on('timeupdate',function(){
+    component.set('currentTime',Math.floor(this.currentTime));
+  });
 
-    var foo = "bar";
-    this.get('songs').forEach(function(song) {
-      eval('');
-      sum += song.get('duration');
-    });
+  $audio.on('play',function(){
+    component.set('isPlaying',true);
+  });
 
-    return sum;
-  }.property('songs.@each.duration')
+  $audio.on('pause',function(){
+    component.set('isPlaying',false);
+  });
+  },
+  play : function(){
+    this.$('audio')[0].play();
+  },
+  pause : function(){
+    this.$('audio')[0].pause();
+  }  
 });
 
-App.AudioPlayerComponent = Ember.Component.extend({
-  classNames: 'audio-control',
+App.TimeDurationComponent = Ember.Component.extend({
+ toggleTime: function(){
+    if(this.showCurrent==true){
+      this.set('showCurrent',false);
+    }else{
+      this.set('showCurrent',true);
+    };  
+  },
+});
 
-  duration: 0,
-  currentTime: 0,
-  isLoaded: false,
+App.NowPlayingController = Ember.ObjectController.extend({
+});
 
-  didInsertElement: function() {
-    var $audio = this.$('audio'),
-        component = this;
-
-    $audio.on('loadedmetadata', function() {
-      component.set('duration', Math.floor(this.duration));
-      component.set('isLoaded', true);
+App.Album = Ember.Object.extend({
+  totalDuration: function(){
+    var songs = this.get('songs');
+    var total = 0;
+    songs.forEach(function(song){
+      total+=song.get('duration');
     });
+    return total;
+  }.property('songs.@each.duration'),
+});
 
-    $audio.on('timeupdate', function() {
-      component.set('currentTime', Math.floor(this.currentTime));
-    });
+App.Song = Ember.Object.extend();
 
-    $audio.on('play', function() {
-      component.set('isPlaying', true);
-    });
-
-    $audio.on('pause', function() {
-      component.set('isPlaying', false);
-    });
-  }
+App.SongController = Ember.ObjectController.extend({
+  needs: ['nowPlaying'],
+  isPlaying : function(){
+    var playing = this.get('model');
+    var songPlaying = this.get('controllers.nowPlaying.model');
+    return playing === songPlaying;
+  }.property('model','controllers.nowPlaying.model')
 });
 
 Ember.Handlebars.helper('format-duration', function(seconds) {
@@ -89,3 +115,4 @@ Ember.Handlebars.helper('format-duration', function(seconds) {
 });
 
 })();
+

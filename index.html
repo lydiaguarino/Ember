@@ -18,8 +18,7 @@
     <script type="text/x-handlebars">
       <header><h1>BümBöx</h1></header>
       {{outlet}}
-
-      {{render 'nowPlaying'}}
+      {{render "nowPlaying"}}
     </script>
 
     <script type="text/x-handlebars" id="index">
@@ -48,14 +47,15 @@
       </div>
 
       <table class="album-listing">
-        {{#each songs}}
-          <tr>
+        {{#each songs itemController='song'}}
+          <tr {{bindAttr class=isPlaying}}>
             <td class="song-track">
               <span class="track-number">{{track}}</span>
-              <span class="play" {{action 'play' this}}>▶</span>
+              <span class="play" {{action "play" this}}>▶</span>
             </td>
             <td class="song-name">{{name}}</td>
             <td class="song-duration">{{format-duration duration}}</td>
+            <td><button class="queue">Queue</button></td>
           </tr>
         {{/each}}
         <tr>
@@ -64,9 +64,30 @@
       </table>
     </script>
 
+    <script type="text/x-handlebars" id="components/audio-player">
+      <audio autoplay=true {{bindAttr src=src}}></audio>
+      {{#if isPlaying}}
+      <button class="pause" {{action pause}}>❙❙</button>
+      {{else}}
+      <button class="play" {{action play}}>▶</button>
+      {{/if}}
+      {{#if isPlaying}}
+        {{time-duration duration=duration currentTime=currentTime showCurrent=showCurrent remainingTime=remainingTime}}
+      {{/if}}
+
+    </script>
+
+    <script type="text/x-handlebars" id="components/time-duration">
+      {{#if showCurrent}}
+        <span {{action toggleTime}} id="current-time">Current Time:{{format-duration currentTime}}</span>
+      {{else}}
+        <span {{action toggleTime}} id="remaining-time">Remaining Time:{{format-duration remainingTime}}</span>
+      {{/if}}
+    </script>
+
     <script type="text/x-handlebars" id="nowPlaying">
-      <footer class="now-playing">
-        {{#if model}}
+      {{#if model}}
+        <footer class="now-playing">
           <img class="now-playing-artwork" {{bindAttr src=album.artwork}}>
           <div class="now-playing-body">
             <p class="now-playing-details">
@@ -74,17 +95,17 @@
               <span class="now-playing-artist">{{album.artist}}</span>
             </p>
             <div class="now-playing-player">
-              {{audio-player src=url}}
+              {{audio-player src=url duration=duration}}
             </div>
           </div>
-        {{else}}
+          <button class="show-queue">Show queue</button>
+        </footer>
+      {{else}}
+        <footer class="now-playing">
           <span class="now-playing-empty">Select a song to start playing.</span>
-        {{/if}}
-      </footer>
-    </script>
-
-    <script type="text/x-handlebars" id="components/audio-player">
-      <audio autoplay {{bindAttr src=src}}></audio>
+          <button class="show-queue">Show queue</button>
+        </footer>
+      {{/if}}
     </script>
 
     <div id="qunit" style="display: none"></div>
